@@ -12,6 +12,26 @@ use image::{ImageBuffer, ImageReader, RgbImage};
 #[derive(Debug)]
 enum RecolorError {}
 
+fn strip_alpha_blend(rgba: &[u8], bg: [u8; 3]) -> Vec<u8> {
+    let mut rgb = Vec::with_capacity(rgba.len() / 4 * 3);
+    for chunk in rgba.chunks_exact(4) {
+        let (r, g, b, a) = (
+            chunk[0] as f32,
+            chunk[1] as f32,
+            chunk[2] as f32,
+            chunk[3] as f32 / 255.0,
+        );
+        let blended = [
+            (r * a + bg[0] as f32 * (1.0 - a)) as u8,
+            (g * a + bg[1] as f32 * (1.0 - a)) as u8,
+            (b * a + bg[2] as f32 * (1.0 - a)) as u8,
+        ];
+        rgb.extend_from_slice(&blended);
+    }
+    rgb
+}
+
+/* Use Eucledian coordinates, for faster calculation */
 fn get_nearest_color(pixel: [u8; 3], palette: &[[u8; 3]]) -> [u8; 3] {
     let mut best = palette[0];
     let mut best_dist = u32::MAX;
@@ -69,16 +89,16 @@ fn main() {
     let path = "image.png";
 
     let dyn_img = ImageReader::open(path).unwrap().decode().unwrap();
-    let rgb_img = dyn_img.to_rgb8();
-    let (w, h) = rgb_img.dimensions();
+    // let rgb_img = dyn_img.to_rgb8();
+    let rgba = dyn_img.to_rgba8();
+    let (w, h) = rgba.dimensions();
 
-    let mut pixels: Vec<u8> = rgb_img.into_raw();
+    // let mut pixels: Vec<u8> = rgb_img.into_raw();
+    let mut pixels = strip_alpha_blend(&rgba.into_raw(), [40, 40, 40]); // Gruvbox bg
 
     if pixels.len() != (w as usize) * (h as usize) * 3 {
         panic!("unexpected pixel buffer size!");
     }
-
-    // let palette: Vec<[u8; 3]> = vec![[0, 255, 0], [255, 255, 255], [200, 20, 20]];
 
     // gruvbox palette
     let palette: Vec<[u8; 3]> = [
@@ -102,7 +122,7 @@ fn main() {
     .to_vec();
 
     remap_fn(&mut pixels, palette).unwrap();
-    save_rgb_image(pixels, w, h, "output.png").unwrap();
+    save_rgb_image(pixels, w, h, "output.jpg").unwrap();
 }
 
 #[cfg(test)]
