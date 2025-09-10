@@ -8,6 +8,7 @@
 use clap::{ArgAction, Parser};
 use image::{ImageBuffer, ImageReader, RgbImage};
 use std::{fmt::Debug, panic, path::Path};
+use viuer::{Config, print_from_file};
 
 #[derive(Debug, Clone)]
 struct Palette {
@@ -166,10 +167,9 @@ fn get_palette(p_name: String) -> Option<Palette> {
 }
 fn main() {
     let args = CliArgs::parse();
-    let input = args.input;
 
-    let dyn_img = ImageReader::open(input).unwrap().decode().unwrap();
-    let rgba = dyn_img.to_rgba8();
+    let dyn_img = ImageReader::open(args.input).unwrap().decode().unwrap();
+    let rgba = dyn_img.to_rgb8();
     let (w, h) = rgba.dimensions();
 
     let mut pixels = strip_alpha_blend(&rgba.into_raw(), [40, 40, 40]);
@@ -183,5 +183,12 @@ fn main() {
     };
 
     remap_fn(&mut pixels, palette).unwrap();
-    save_rgb_image(pixels, w, h, args.output).unwrap();
+    save_rgb_image(pixels, w, h, args.output.clone()).unwrap();
+
+    let config = Config {
+        ..Default::default()
+    };
+
+    // Maybe find a better way than writing and then reading the file
+    print_from_file(args.output, &config).expect("Failed to print image");
 }

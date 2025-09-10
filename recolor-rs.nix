@@ -3,7 +3,7 @@
   fetchFromGitHub,
   rustPlatform,
 }: let
-  manifest = lib.importTOML ./Cargo.toml;
+  # manifest = lib.importTOML ./Cargo.toml;
 in
   rustPlatform.buildRustPackage (finalAttrs: {
     # pname = manifest.name;
@@ -12,23 +12,22 @@ in
     version = "0.1.0";
 
     # For development
-    # src = ./.;
+    src = ./.;
 
     # src = fetchFromGitHub {
     #   owner = "EinsatzMitX";
     #   repo = "recolor-rs";
-    #   tag = finalAttrs.version;
-    #   # hash = lib.fakeHash;
-    #   # hash = "";
+    #   tag = "v${finalAttrs.version}";
+    #   hash = "sha256-EeQrz5lF8166sCBjlbgspU1NR7ybjaDFiS4aRGhsD70=";
     # };
 
-    cargoHash = "sha256-srV+mGolUrG17xNHy5saK3iXLQBdMOm1KoJCt1MvFY8=";
+    cargoHash = "sha256-kYl0f3QYiMSlSZ2wmolCjMNaEzowIxWDwFAfO9Yx340=";
     # cargoHash = lib.fakeHash;
 
     meta = {
-      description = "Fast line-oriented regex search tool, similar to ag and ack";
+      description = "A CLI tool to revolor images, written in Rust";
       homepage = "https://github.com/EinSatzMitX/recolor-rs";
       license = lib.licenses.unlicense;
-      maintainers = [];
+      maintainers = with lib.maintainers; [EinSatzMitX];
     };
   })
