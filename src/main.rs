@@ -5,9 +5,28 @@
 *   - yeah thats kinda it
 * */
 
+use clap::{ArgAction, Parser};
+use image::{ImageBuffer, ImageReader, RgbImage};
 use std::{fmt::Debug, panic, path::Path};
 
-use image::{ImageBuffer, ImageReader, RgbImage};
+#[derive(Debug, Clone)]
+struct Palette {
+    name: String,
+    colors: Vec<[u8; 3]>,
+}
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct CliArgs {
+    #[arg(short = 'i', long = "input", action = ArgAction::Set, required = true)]
+    input: String,
+
+    #[arg(short = 'o', long = "output", action = ArgAction::Set, required = true)]
+    output: String,
+
+    #[arg(short = 'p', long = "palette", action = ArgAction::Set, required = true)]
+    palette: String,
+}
 
 #[derive(Debug)]
 enum RecolorError {}
@@ -85,44 +104,87 @@ fn save_rgb_image<P: AsRef<Path>>(
     Ok(())
 }
 
-fn main() {
-    let path = "image.png";
+#[allow(clippy::vec_init_then_push)]
+fn get_palette(p_name: String) -> Option<Palette> {
+    let mut palettes: Vec<Palette> = Vec::new();
+    palettes.push(Palette {
+        colors: [
+            [40, 40, 40],
+            [235, 219, 178],
+            [251, 73, 52],
+            [184, 187, 38],
+            [250, 189, 47],
+            [131, 165, 152],
+            [211, 134, 155],
+            [142, 192, 124],
+            [235, 173, 52],
+            [146, 131, 116],
+            [214, 93, 14],
+            [215, 153, 33],
+            [69, 133, 136],
+            [177, 98, 134],
+            [204, 36, 29],
+            [152, 151, 26],
+        ]
+        .to_vec(),
+        name: "gruvbox".to_string(),
+    });
+    palettes.push(Palette {
+        colors: [
+            [244, 219, 214],
+            [240, 198, 198],
+            [245, 189, 230],
+            [198, 160, 246],
+            [237, 135, 150],
+            [238, 153, 160],
+            [245, 169, 127],
+            [238, 212, 159],
+            [166, 218, 149],
+            [139, 213, 202],
+            [145, 215, 227],
+            [125, 196, 228],
+            [138, 173, 244],
+            [183, 189, 248],
+            [202, 211, 245],
+            [184, 192, 224],
+            [165, 173, 203],
+            [147, 154, 183],
+            [128, 135, 162],
+            [110, 115, 141],
+            [91, 96, 120],
+            [73, 77, 100],
+            [54, 58, 79],
+            [36, 39, 58],
+            [30, 32, 48],
+            [24, 25, 38],
+        ]
+        .to_vec(),
+        name: "catpuccin-macchiato".to_string(),
+    });
 
-    let dyn_img = ImageReader::open(path).unwrap().decode().unwrap();
-    // let rgb_img = dyn_img.to_rgb8();
+    // find by reference, then cloned() to return Option<Palette>
+    palettes.iter().find(|p| p.name == p_name).cloned()
+}
+fn main() {
+    let args = CliArgs::parse();
+    let input = args.input;
+
+    let dyn_img = ImageReader::open(input).unwrap().decode().unwrap();
     let rgba = dyn_img.to_rgba8();
     let (w, h) = rgba.dimensions();
 
-    // let mut pixels: Vec<u8> = rgb_img.into_raw();
-    let mut pixels = strip_alpha_blend(&rgba.into_raw(), [40, 40, 40]); // Gruvbox bg
-
+    let mut pixels = strip_alpha_blend(&rgba.into_raw(), [40, 40, 40]);
     if pixels.len() != (w as usize) * (h as usize) * 3 {
         panic!("unexpected pixel buffer size!");
     }
 
-    // gruvbox palette
-    let palette: Vec<[u8; 3]> = [
-        [40, 40, 40],    // bg0: #282828
-        [235, 219, 178], // fg:  #ebdbb2
-        [251, 73, 52],   // red: #fb4934
-        [184, 187, 38],  // green: #b8bb26
-        [250, 189, 47],  // yellow: #fabd2f
-        [131, 165, 152], // aqua: #83a598
-        [211, 134, 155], // purple: #d3869b
-        [142, 192, 124], // bright green: #8ec07c
-        [235, 173, 52],  // orange: #ebad34
-        [146, 131, 116], // gray: #928374
-        [214, 93, 14],   // bright orange: #d65d0e
-        [215, 153, 33],  // bright yellow: #d79921
-        [69, 133, 136],  // teal: #458588
-        [177, 98, 134],  // pink/purple alt: #b16286
-        [204, 36, 29],   // bright red: #cc241d
-        [152, 151, 26],  // bright green (alt): #98971a
-    ]
-    .to_vec();
+    let palette = match get_palette(args.palette.to_lowercase()) {
+        Some(v) => v.colors,
+        None => panic!("Palette name not found!"),
+    };
 
     remap_fn(&mut pixels, palette).unwrap();
-    save_rgb_image(pixels, w, h, "output.jpg").unwrap();
+    save_rgb_image(pixels, w, h, args.output).unwrap();
 }
 
 #[cfg(test)]
