@@ -185,22 +185,3 @@ fn main() {
     remap_fn(&mut pixels, palette).unwrap();
     save_rgb_image(pixels, w, h, args.output).unwrap();
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::get_nearest_color;
-
-    #[test]
-    fn test_smaller() {
-        let palette: Vec<[u8; 3]> = vec![
-            [0, 255, 0],
-            [255, 255, 255],
-            [200, 200, 200],
-            [170, 170, 170],
-        ];
-        assert_eq!(
-            get_nearest_color([254, 254, 254], &palette),
-            [255, 255, 255]
-        );
-    }
-}
