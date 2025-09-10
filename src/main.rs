@@ -162,7 +162,6 @@ fn get_palette(p_name: String) -> Option<Palette> {
         name: "catpuccin-macchiato".to_string(),
     });
 
-    // find by reference, then cloned() to return Option<Palette>
     palettes.iter().find(|p| p.name == p_name).cloned()
 }
 fn main() {

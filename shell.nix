@@ -1,11 +1,8 @@
-{pkgs ? import <nixpkgs> {}}:
-pkgs.mkShell {
-  # Get dependencies from the main package
-  inputsFrom = [(pkgs.callPackage ./default.nix {})];
-  # Additional tooling
-  buildInputs = with pkgs; [
-    rust-analyzer # LSP Server
-    rustfmt # Formatter
-    clippy # Linter
-  ];
-}
+{pkgs ? import <nixpkgs> {}}: let
+  recolor-rs = pkgs.callPackage ./recolor-rs.nix {};
+in
+  pkgs.mkShell {
+    name = "recolor-rs";
+
+    buildInputs = [recolor-rs];
+  }
